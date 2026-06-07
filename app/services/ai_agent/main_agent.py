@@ -1,0 +1,168 @@
+
+from app.services.model import AgentInput
+from app.services.ai_agent.PL_MOU_path import generate_PLMOU_offer
+from app.services.ai_agent.TDR_PL_path import generate_TDR_offer
+from app.services.ai_agent.GDR_path import generate_GDR_offer
+from app.services.ai_agent.nonTDR_extension_path import generate_nonTDR_extension_offer
+from app.services.ai_agent.config import PreferenceRANKING
+from app.services.functions.util import SummarisePayment
+from app.services.functions.AmortiseCal import findInterestPaid
+from typing import Any, List, Dict
+import pandas as pd
+import json
+
+
+def DebtSolution_agent(Input: AgentInput) -> dict[str, any]:
+    DebtSoln = DebtSolutionObject(**(Input.model_dump()))
+    result = DebtSoln.get_solution()
+    return result
+
+class DebtSolutionObject:
+    def __init__(self, 
+                userMessage : str,
+                narrative : str,
+                preference: str,
+                maxPayment: float,
+                maxTerm: int,
+                userInfo : dict[str, any],
+                eligiblePath: list[str],
+                df_offerSoln: List[Dict[str, Any]],
+                dfKTBAcc: List[Dict[str, Any]],
+                dfAccConsult: List[Dict[str, Any]]):
+
+        self.userMessage = userMessage
+        self.narrative = narrative
+        self.preference = preference
+        self.maxPayment = maxPayment
+        self.maxTerm = maxTerm
+        self.userInfo = userInfo
+        self.eligiblePath = eligiblePath
+        self.df_offerSoln = pd.DataFrame(df_offerSoln)
+        self.dfAccConsult = pd.DataFrame(dfAccConsult)
+        self.dfKTBAcc = pd.DataFrame(dfKTBAcc)
+
+        self.prefRanking = PreferenceRANKING[(self.preference, self.userInfo.get("CustomerSegment", ""))]
+        self.currentPaymentSummary = SummarisePayment(df_acc_consider = self.dfAccConsult)
+        self.OriginalPayDesc = (f"สถานะของสินเชื่อในปัจจุบัน \n"
+                                f"เลขที่บัญชีสินเชื่อที่พิจารณา {",".join(sorted(list(self.dfAccConsult["accNo"])))} \n"
+                                f"เงินต้นคงเหลือรวม {self.currentPaymentSummary["TotalOS"]:,.2f} บาท\n")
+             
+    def generate_offers(self):
+        offer_lst = []
+        if "PL_MOU" in self.eligiblePath:
+            offer_lst = offer_lst + generate_PLMOU_offer(currentStatus = self.currentPaymentSummary,
+                                                         userInfo = self.userInfo,
+                                                         dfKTBAcc = self.dfKTBAcc,
+                                                         dfAccConsult = self.dfAccConsult,
+                                                         maxPayment = self.maxPayment,
+                                                         maxTerm = self.maxTerm)
+            
+        if True: #Reduce installment based on remaining terms
+            offer_lst = offer_lst + generate_nonTDR_extension_offer(currentStatus = self.currentPaymentSummary,
+                                                                    dfAccConsult = self.dfAccConsult)
+
+        if self.userInfo.get("CustomerSegment", "")=="C1": #stop principal payment for 3 month
+            offer_lst = offer_lst + generate_GDR_offer(currentStatus = self.currentPaymentSummary,
+                                                       dfAccConsult = self.dfAccConsult)
+            
+        if True:
+            offer_lst = offer_lst +  generate_TDR_offer(currentStatus = self.currentPaymentSummary,
+                                                        dfAccConsult = self.dfAccConsult,
+                                                        dfKTBAcc = self.dfKTBAcc,
+                                                        maxPayment = self.maxPayment,
+                                                        userInfo = self.userInfo)
+        
+            
+        new_offer_lst = [offer.model_dump() for offer in offer_lst if self.check_repeat(offer)]
+        self.shortlisted_offer = self.shortlist_offer(new_offer_lst = new_offer_lst)
+            
+    def check_repeat(self, offer):
+        if len(self.df_offerSoln) > 0:
+            df_match = self.df_offerSoln.loc[(self.df_offerSoln['plan'].str[:3]==offer.plan[:3])
+                                            & (self.df_offerSoln['refAccNo']==offer.refAccNo)
+                                            & (self.df_offerSoln['term']==offer.term)
+                                            & (self.df_offerSoln['constantPayment']==offer.constantPayment)
+                                            & ((self.df_offerSoln['installment']-offer.installment).abs()<100)
+                                            & ((self.df_offerSoln['totalIntPaid']-offer.totalIntPaid).abs()<100)]
+            return (len(df_match)==0)
+        else:
+            return True
+    
+    def shortlist_offer(self, new_offer_lst)->list:
+        PlanList = [offer["plan"] for offer in new_offer_lst]
+        shortlistplan = [plan for plan in self.prefRanking if plan in PlanList][:2]
+        offer_map = {offer["plan"]: offer for offer in new_offer_lst}
+        return [offer_map[plan] for plan in shortlistplan]
+
+    def get_solution(self)->dict[str, any]:
+        self.generate_offers()
+        agent_result = {"newOfferSoln": [{key: offer[key] for key in offer.keys() if key not in ["solnAcc", "offerText", "offerCard"]} for offer in self.shortlisted_offer],
+                        "newOfferSolnAcc": [acc for offer in self.shortlisted_offer for acc in offer["solnAcc"]],
+                        "newOfferCard": [{key: offer[key] for key in offer if key in ["planId", "offerCard"]} for offer in self.shortlisted_offer]}
+        if len(self.shortlisted_offer)>0:
+            agent_result["replyMessage"] = json.dumps([{"jsonType": "offerCard",
+                                                         **{key: offer[key] for key in offer if key in ["planId", "offerCard"]}
+                                                        } for offer in self.shortlisted_offer], ensure_ascii=False)
+            agent_result["type"] = "json"
+        elif len(self.df_offerSoln)>0:
+            agent_result["replyMessage"] = """ขออภัยด้วยค่ะ จากเงื่อนไขของท่านระบบไม่พบมาตรการช่วยเหลือเพิ่มเติม
+                                              กรุณาระบุข้อมูลเงื่อนไขในการชำระ (อาทิ ความสามารถในการชำระต่อเดือน/ จำนวนงวดที่ต้องการชำระสินเชื่อ)
+                                              หรือหากท่านต้องการปรึกษากับเจ้าหน้าที่ ระบบจะดำเนินการส่งเรื่องให้เจ้าหน้าที่ติดต่อท่านกลับไป"""
+            agent_result["type"] = "text"
+        else:
+            agent_result["replyMessage"] = """ขออภัยด้วยค่ะ จากข้อมูลและสถานะบัญชีของท่าน ระบบไม่พบมาตรการช่วยเหลือในการแก้ปัญหาหนี้
+                                              หากท่านต้องการปรึกษากับเจ้าหน้าที่ ระบบจะดำเนินการส่งเรื่องให้เจ้าหน้าที่ติดต่อท่านกลับไป"""
+            agent_result["type"] = "text"
+        return agent_result
+
+    
+    
+
+
+
+    
+
+
+    
+
+    
+    
+
+
+
+
+
+
+
+
+            
+
+    
+        
+    
+        
+    
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    
+
+    
+    
+
+
+
+
+
+    
+
