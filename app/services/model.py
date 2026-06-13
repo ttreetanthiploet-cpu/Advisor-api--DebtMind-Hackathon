@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Any, List, Dict
 from app.services.HTML.model_HTML import OfferCard
+import numpy as np
 
 class AdvisorOutput(BaseModel):
     replyMessage : str = "ระบบประมวลผลขัดข้อง กรุณาถามคำถามใหม่อีกครั้ง"
@@ -8,10 +9,23 @@ class AdvisorOutput(BaseModel):
     newOfferSoln: List[Dict[str, Any]] = []
     newOfferSolnAcc: List[Dict[str, Any]] = []
 
+class AdditionalPref(BaseModel):
+    DebtSituation: str
+    refPlanID: str = ""
+    maxPaymentY2: float = np.inf
+    maxPaymentY3: float = np.inf
+
+    @field_validator("maxPaymentY2", "maxPaymentY3", mode="before")
+    @classmethod
+    def coerce_to_float(cls, v):
+        if v is None or v == "" or v == "null":
+            return np.inf
+        return float(v)
+
+
 class AgentInput(BaseModel):
     userMessage : str 
     narrative : str 
-    preference: str
     maxPayment: float
     maxTerm: int
     userInfo : dict[str, Any]
@@ -19,6 +33,7 @@ class AgentInput(BaseModel):
     df_offerSoln: List[Dict[str, Any]]
     dfAccConsult: List[Dict[str, Any]]
     dfKTBAcc: List[Dict[str, Any]]
+    preference: AdditionalPref
 
 class DebtSolnAcc(BaseModel):
     plan: str

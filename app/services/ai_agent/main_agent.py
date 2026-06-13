@@ -1,5 +1,5 @@
 
-from app.services.model import AgentInput
+from app.services.model import AgentInput, AdditionalPref
 from app.services.ai_agent.PL_MOU_path import generate_PLMOU_offer
 from app.services.ai_agent.TDR_PL_path import generate_TDR_offer
 from app.services.ai_agent.GDR_path import generate_GDR_offer
@@ -21,7 +21,7 @@ class DebtSolutionObject:
     def __init__(self, 
                 userMessage : str,
                 narrative : str,
-                preference: str,
+                preference: AdditionalPref,
                 maxPayment: float,
                 maxTerm: int,
                 userInfo : dict[str, any],
@@ -41,7 +41,7 @@ class DebtSolutionObject:
         self.dfAccConsult = pd.DataFrame(dfAccConsult)
         self.dfKTBAcc = pd.DataFrame(dfKTBAcc)
 
-        self.prefRanking = PreferenceRANKING[(self.preference, self.userInfo.get("CustomerSegment", ""))]
+        self.prefRanking = PreferenceRANKING[(self.preference["DebtSituation"], self.userInfo.get("CustomerSegment", ""))]
         self.currentPaymentSummary = SummarisePayment(df_acc_consider = self.dfAccConsult)
         self.OriginalPayDesc = (f"สถานะของสินเชื่อในปัจจุบัน \n"
                                 f"เลขที่บัญชีสินเชื่อที่พิจารณา {",".join(sorted(list(self.dfAccConsult["accNo"])))} \n"
@@ -67,6 +67,7 @@ class DebtSolutionObject:
             
         if True:
             offer_lst = offer_lst +  generate_TDR_offer(currentStatus = self.currentPaymentSummary,
+                                                        preference = self.preference,
                                                         dfAccConsult = self.dfAccConsult,
                                                         dfKTBAcc = self.dfKTBAcc,
                                                         maxPayment = self.maxPayment,
@@ -90,7 +91,19 @@ class DebtSolutionObject:
     
     def shortlist_offer(self, new_offer_lst)->list:
         PlanList = [offer["plan"] for offer in new_offer_lst]
-        shortlistplan = [plan for plan in self.prefRanking if plan in PlanList][:2]
+        if self.preference["refPlanID"] != "":
+            ref_plan = [p for p in PlanList if self.preference["refPlanID"].startswith(p)][0]
+            print(ref_plan)
+            if ref_plan in ["PLMOU01", "PLMOU03", "PLMOU02"]:
+                shortlistplan = [plan for plan in ["PLMOU03", "PLMOU02"] if plan in PlanList][:2]
+            elif ref_plan in ["TDR01", "TDR02", "TDR03"]:
+                shortlistplan = [plan for plan in ["TDR02", "TDR03"] if plan in PlanList][:2]
+            elif ref_plan in ["TDR04", "TDR05", "TDR06", "TDR07", "TDR08", "TDR09"]:
+                shortlistplan = [plan for plan in ["TDR04", "TDR05"] if plan in PlanList][:2]
+            else:
+                shortlistplan = [plan for plan in self.prefRanking if plan in PlanList][:2]
+        else:
+            shortlistplan = [plan for plan in self.prefRanking if plan in PlanList][:2]
         offer_map = {offer["plan"]: offer for offer in new_offer_lst}
         return [offer_map[plan] for plan in shortlistplan]
 

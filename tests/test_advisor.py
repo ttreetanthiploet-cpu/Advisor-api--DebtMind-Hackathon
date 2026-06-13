@@ -7,42 +7,42 @@ from httpx import ASGITransport, AsyncClient
 from app.main import app
 from app.services.advisor_reply import AdvisorReply
 
-PAYLOAD: dict[str, Any] = {
-    "sessionId": "s44585",
+PAYLOAD: dict[str, Any] ={
+    "sessionId": "12345678",
     "customerId": "1210003",
-    "userMessage": "ต้องการปรับโครงสร้างหนี้สินเชื่อส่วนบุคคลทั้งหมด",
+    "userMessage": "สนใจแผนรวมหนี้ ที่ผ่อนเดือนละ 1400 แต่อยากผ่อนให้หมดใน 4 ปี",
     "conversationDesc": {
-      "consultAcc": "10000004,10000006",
-      "preference": "DebtBurden",
-      "maxPayment": 0,
-      "maxTerm": 360,
+      "consultAcc": "10000005,10000006",
       "offerSoln": [
         {
-          "solutionDesc": "ขั้นต่ำที่สุดที่เป็นไปได้",
-          "plan": "PL_MOU",
-          "sessionId": "s44585",
+          "solutionDesc": "อัตราขั้นต่ำของธนาคาร",
+          "plan": "PLMOU01",
+          "sessionId": "12345678",
           "planDesc": "สินเชื่อรวมหนี้ MOU แบบไม่มีหลักประกัน",
-          "totalExpInt": 51057.85965463711,
-          "term": 60,
-          "installment": 6200,
-          "constantPayment": True,
-          "planId": "PLMOU0120260524144313",
-          "refAccNo": "10000004"
+          "totalExpInt": 25082.59789396898,
+          "term": 96,
+          "installment": 1400,
+          "constantPayment": true,
+          "planId": "PLMOU0120260608161328",
+          "refAccNo": "10000005,10000006"
         },
         {
-          "solutionDesc": "ขั้นต่ำที่สุดที่เป็นไปได้",
-          "plan": "PL_MOU",
-          "sessionId": "s44585",
+          "solutionDesc": "ความสามารถในการชำระ",
+          "plan": "PLMOU02",
+          "sessionId": "12345678",
           "planDesc": "สินเชื่อรวมหนี้ MOU แบบไม่มีหลักประกัน",
-          "totalExpInt": 51057.85965463711,
-          "term": 70,
-          "installment": 4500,
-          "constantPayment": True,
-          "planId": "PLMOU0120260524144313",
-          "refAccNo": "10000004"
+          "totalExpInt": 9388.932980102269,
+          "term": 35,
+          "installment": 3200,
+          "constantPayment": true,
+          "planId": "PLMOU0220260608161328",
+          "refAccNo": "10000005,10000006"
         }
       ],
-      "narrative": "The user wants to restructure all their personal loans."
+      "preference": "{\"DebtSituation\":\"DebtBurden\",\"refPlanID\":\"PLMOU0120260608161328\"}",
+      "maxPayment": 1400,
+      "maxTerm": 48,
+      "narrative": "The user is interested in the previously proposed debt consolidation plan. They have requested a modification to the plan, specifically asking for a repayment term of 4 years. The query is being routed to the advisor to generate a revised recommendation based on this new constraint."
     },
     "userInfo": {
       "cif": "1210003",
@@ -105,7 +105,7 @@ PAYLOAD: dict[str, Any] = {
         "installment": 2100
       }
     ],
-    "timestamp": "2025-06-02T13:10:10Z"
+    "timestamp": "2026-06-13T13:26:32.842Z"
   }
 
 
