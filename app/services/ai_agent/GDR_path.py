@@ -91,7 +91,8 @@ def product_GDR_summary(planId, currentStatus, dfAccConsult, dfOffer) -> DebtSol
         "solutionDesc":"พักชำระเงินต้น","plan":plan,"planId":planId,
         "refAccNo":", ".join(sorted(dfOffer["accNo"].tolist())),
         "planDesc":"พักชำระเงินต้น",
-        "installment":dfOffer["installment"].sum(),"term":dfOffer["installment"].max(),
+        "installment":dfOffer["installment"].sum(),"term":dfOffer["actualTerm"].max(),
+        "installment_Y2":dfOffer["installment_Y2"].sum(),
         "totalIntPaid":dfOffer["expIntTotal"].sum(),"constantPayment":False,
         "offerText":description,"offerCard":card.model_dump(),"solnAcc":solnList,
     })
