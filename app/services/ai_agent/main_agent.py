@@ -37,6 +37,7 @@ class DebtSolutionObject:
         self.maxTerm = maxTerm
         self.userInfo = userInfo
         self.eligiblePath = eligiblePath
+        print(df_offerSoln)
         self.df_offerSoln = pd.DataFrame(df_offerSoln)
         self.dfAccConsult = pd.DataFrame(dfAccConsult)
         self.dfKTBAcc = pd.DataFrame(dfKTBAcc)
@@ -78,13 +79,15 @@ class DebtSolutionObject:
         self.shortlisted_offer = self.shortlist_offer(new_offer_lst = new_offer_lst)
             
     def check_repeat(self, offer):
+        print("============test============")
+        print(self.df_offerSoln)
         if len(self.df_offerSoln) > 0:
-            df_match = self.df_offerSoln.loc[(self.df_offerSoln['plan'].str[:3]==offer.plan[:3])
+            df_match = self.df_offerSoln.loc[(self.df_offerSoln['plan']==offer.plan)
                                             & (self.df_offerSoln['refAccNo']==offer.refAccNo)
                                             & (self.df_offerSoln['term']==offer.term)
-                                            & (self.df_offerSoln['constantPayment']==offer.constantPayment)
                                             & ((self.df_offerSoln['installment']-offer.installment).abs()<100)
-                                            & ((self.df_offerSoln['totalIntPaid']-offer.totalIntPaid).abs()<100)]
+                                            & ((self.df_offerSoln['installment_Y2'].fillna(-100) - (offer.installment_Y2 if pd.notna(offer.installment_Y2) else -100)).abs() < 100)
+                                            & ((self.df_offerSoln['installment_Y3'].fillna(-100) - (offer.installment_Y3 if pd.notna(offer.installment_Y3) else -100)).abs() < 100)]
             return (len(df_match)==0)
         else:
             return True
