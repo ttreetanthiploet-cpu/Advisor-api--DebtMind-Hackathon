@@ -95,8 +95,7 @@ class DebtSolutionObject:
     def shortlist_offer(self, new_offer_lst)->list:
         PlanList = [offer["plan"] for offer in new_offer_lst]
         if self.preference["refPlanID"] != "":
-            ref_plan = [p for p in PlanList if self.preference["refPlanID"].startswith(p)][0]
-            print(ref_plan)
+            ref_plan = [p for p in self.prefRanking if self.preference["refPlanID"].startswith(p)][0]
             if ref_plan in ["PLMOU01", "PLMOU03", "PLMOU02"]:
                 shortlistplan = [plan for plan in ["PLMOU03", "PLMOU02"] if plan in PlanList][:2]
             elif ref_plan in ["TDR01", "TDR02", "TDR03"]:
