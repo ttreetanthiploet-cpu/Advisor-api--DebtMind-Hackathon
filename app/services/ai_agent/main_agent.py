@@ -37,7 +37,6 @@ class DebtSolutionObject:
         self.maxTerm = maxTerm
         self.userInfo = userInfo
         self.eligiblePath = eligiblePath
-        print(df_offerSoln)
         self.df_offerSoln = pd.DataFrame(df_offerSoln)
         self.dfAccConsult = pd.DataFrame(dfAccConsult)
         self.dfKTBAcc = pd.DataFrame(dfKTBAcc)
@@ -79,8 +78,6 @@ class DebtSolutionObject:
         self.shortlisted_offer = self.shortlist_offer(new_offer_lst = new_offer_lst)
             
     def check_repeat(self, offer):
-        print("============test============")
-        print(self.df_offerSoln)
         if len(self.df_offerSoln) > 0:
             df_match = self.df_offerSoln.loc[(self.df_offerSoln['plan']==offer.plan)
                                             & (self.df_offerSoln['refAccNo']==offer.refAccNo)
