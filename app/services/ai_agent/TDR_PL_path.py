@@ -191,16 +191,16 @@ def TDR_summary(plan, planId, dfOffer, dfAccConsult, solutionDesc, currentStatus
     })
 
 
-def NewStepOffer(planStep,planStepBalloon,mp,dfElig,dfNon,dfAcc,currentStatus):
+def NewStepOffer(planStep,planStepBalloon,mp,dfElig,dfNon,currentStatus):
     out=[]
     dfSt=TDRstepUpOffer(mp,dfElig)
     if dfSt["remainTerm"].max()<=TDR_maxPaymentTerm:
         out.append(TDR_summary(planStep,planStep+dt.datetime.now().strftime("%Y%m%d%H%M%S"),
-                               pd.concat([dfSt,dfNon]),dfAcc,"ตามความสามารถในการจ่ายของลูกค้า",currentStatus,False,False))
+                               pd.concat([dfSt,dfNon]),dfSt,"ตามความสามารถในการจ่ายของลูกค้า",currentStatus,False,False))
     if (dfSt["remainTerm"]>dfSt["contractTerm"]).any():
         dfSB=BalloonPlan(dfSt)
         out.append(TDR_summary(planStepBalloon,planStepBalloon+dt.datetime.now().strftime("%Y%m%d%H%M%S"),
-                               pd.concat([dfSB,dfNon]),dfAcc,"ตามความสามารถในการจ่ายของลูกค้า",currentStatus,False,True))
+                               pd.concat([dfSB,dfNon]),dfSB,"ตามความสามารถในการจ่ายของลูกค้า",currentStatus,False,True))
     return out
 
 
@@ -236,15 +236,15 @@ def generate_TDR_offer(dfAccConsult,dfKTBAcc,maxPayment,userInfo,currentStatus, 
     mp0=mp.copy()
     mp0["installment_Y2"] = min(mp0["installment_Y2"], preference["maxPaymentY2"])
     mp0["installment_Y3"] = min(mp0["installment_Y3"], preference["maxPaymentY3"])
-    out+=NewStepOffer("TDR04","TDR05",mp0, dfElig, dfNon, dfAcc, currentStatus)
+    out+=NewStepOffer("TDR04","TDR05",mp0, dfElig, dfNon, currentStatus)
     mpR=mp.copy()
     mpR["installment_Y2"] = min(0.9*mpR["installment_Y2"], preference["maxPaymentY2"])
     mpR["installment_Y3"] = min(0.9*mpR["installment_Y3"], preference["maxPaymentY3"])
     
-    out+=NewStepOffer("TDR06","TDR07",mpR,dfElig,dfNon,dfAcc,currentStatus)
+    out+=NewStepOffer("TDR06","TDR07",mpR,dfElig,dfNon,currentStatus)
     if (mpR["installment_Y2"]>dfElig["installment"].sum()) or (mpR["installment_Y3"]>dfElig["installment"].sum()):
         mpC=mpR.copy()
         mpC["installment_Y2"]=min(mpC["installment_Y2"],dfElig["installment"].sum(), preference["maxPaymentY2"])
         mpC["installment_Y3"]=min(mpC["installment_Y3"],dfElig["installment"].sum(), preference["maxPaymentY3"])
-        out+=NewStepOffer("TDR08","TDR09",mpC,dfElig,dfNon,dfAcc,currentStatus)
+        out+=NewStepOffer("TDR08","TDR09",mpC,dfElig,dfNon, currentStatus)
     return out
