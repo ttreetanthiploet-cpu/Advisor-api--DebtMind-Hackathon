@@ -3,7 +3,7 @@ PL_MOU_interest_map = {'ข้าราชการ' : 0.06,
 
 #PL_MOU_maxPaymentTerm = 60 #Maximum Payment Term of a given loan
 
-TDR_maxPaymentTerm = 60
+TDR_maxPaymentTerm = 120
 TDRmin_payment_prop = 0.05
 PossibleTDRLoan = ["สินเชื่อดิจิตอลส่วนบุคคล",
                    "สินเชื่อส่วนบุคคล"]
