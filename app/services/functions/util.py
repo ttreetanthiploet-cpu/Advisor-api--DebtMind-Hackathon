@@ -13,6 +13,7 @@ def SummarisePayment(df_acc_consider: pd.DataFrame):
                                                                                         first_period_payment=row["installment"],
                                                                                         payment_period=row["actualTerm"]),  axis=1 )
     return {"current_debt": df_acc_consider,
+            "accNo": ",".join(sorted(df_acc_consider["accNo"].tolist())),
             "expIntTotal": df_acc_consider["expIntTotal"].sum(),
             "MaxDPD": df_acc_consider["currentDPD"].max(),
             "TotalOS": df_acc_consider["os"].sum(),
@@ -37,7 +38,7 @@ def DSR_feasibility(ktbInstallment: float,
                     income: float,
                     occ: str,
                     )->float:
-    if occ == "ข้าราชการ":
+    if occ == "ข้าราชการ/เจ้าหน้าที่รัฐ (Public Sector)":
         threshold = 0.9
     else:
         threshold = 0.8
@@ -49,7 +50,7 @@ def DSR_feasibile_payment(ktbInstallment: float,
                           NCBInstallment: float,
                           income: float,
                           occ: str)->float:
-    if occ == "ข้าราชการ":
+    if occ == "ข้าราชการ/เจ้าหน้าที่รัฐ (Public Sector)":
         threshold = 0.9
     else:
         threshold = 0.8

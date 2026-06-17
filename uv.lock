@@ -24,6 +24,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pydantic-settings" },
     { name = "pytest" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -41,6 +42,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.6.0" },
     { name = "pytest", specifier = ">=9.0.3" },
+    { name = "uvicorn", specifier = ">=0.47.0" },
 ]
 
 [package.metadata.requires-dev]

@@ -62,7 +62,6 @@ class DebtSolnSummary(BaseModel):
     constantPayment: bool
     offerCard: OfferCard
     # LLMofferText: str
-    offerText: str
     solnAcc: List[Dict[str, Any]]
 
     

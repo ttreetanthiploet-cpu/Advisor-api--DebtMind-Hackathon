@@ -138,13 +138,13 @@ function summaryHTML() {
     </div>
     <div class="meta">
       <div class="mr"><div class="ml">ภาระหนี้คงเหลือรวม</div><div class="mv">${h(D.total_os)} บาท</div></div>
-      ${mr('พิจารณาข้อเสนอจาก', h(D.source_desc))}
+      ${mr('พิจารณาข้อเสนอ', h(D.source_desc))}
       ${mr('อัตราดอกเบี้ย', D.int_rate_new ? `<span class="b">${h(D.int_rate_new)}</span>` : '')}
       ${mr('ระยะเวลาผ่อนชำระจากอัตราผ่อนชำระเดิม', h(D.term_actual_old))}
       ${mr('ระยะเวลาผ่อนชำระจากอัตราผ่อนชำระใหม่', D.term_remain_new ? `<span class="b">${h(D.term_remain_new)}</span>` : '')}
       ${mr('ระยะเวลาผ่อนชำระ', D.term_change ? `<span class="b">${h(D.term_change)}</span>` : '')}
       ${mr('ค่างวดผ่อนชำระในปีที่ 2 และ 3', D.inst_y2y3 ? `<span class="b">${h(D.inst_y2y3)}</span>` : '')}
-      ${mr('อัตราผ่อนชำระภายหลังจาก 3 เดือน', D.inst_after_3m ? `<span class="b">${h(D.inst_after_3m)}</span>` : '')}
+      ${mr('อัตราผ่อนชำระรวมภายหลังจาก 3 เดือน', D.inst_after_3m ? `<span class="b">${h(D.inst_after_3m)}</span>` : '')}
       ${mr('ดอกเบี้ยรวมตลอดสัญญา', h(D.int_total_change))}
     </div>
     ${balloon}

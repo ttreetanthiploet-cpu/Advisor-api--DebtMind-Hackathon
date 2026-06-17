@@ -1,6 +1,6 @@
 
 from app.services.model import AgentInput, AdditionalPref
-from app.services.ai_agent.PL_MOU_path import generate_PLMOU_offer
+from app.services.ai_agent.CSL_path import generate_CSL_offer
 from app.services.ai_agent.TDR_PL_path import generate_TDR_offer
 from app.services.ai_agent.GDR_path import generate_GDR_offer
 from app.services.ai_agent.nonTDR_extension_path import generate_nonTDR_extension_offer
@@ -27,8 +27,8 @@ class DebtSolutionObject:
                 userInfo : dict[str, any],
                 eligiblePath: list[str],
                 df_offerSoln: List[Dict[str, Any]],
-                dfKTBAcc: List[Dict[str, Any]],
-                dfAccConsult: List[Dict[str, Any]]):
+                dfKTBAcc: List[Dict[str, Any]], #บัญชีสินเชื่อธนาคารกรุงไทยทั้งหมด
+                dfAccConsult: List[Dict[str, Any]]): #เฉพาะบัญชีที่ลูกค้าเลือกให้พิจารณา
 
         self.userMessage = userMessage
         self.narrative = narrative
@@ -49,29 +49,26 @@ class DebtSolutionObject:
              
     def generate_offers(self):
         offer_lst = []
-        if "PL_MOU" in self.eligiblePath:
-            offer_lst = offer_lst + generate_PLMOU_offer(currentStatus = self.currentPaymentSummary,
+        if self.userInfo.get("CustomerSegment", "") in ["Current", "C1", "C1-X"]:
+            offer_lst = offer_lst + generate_CSL_offer(currentStatus = self.currentPaymentSummary,
                                                          userInfo = self.userInfo,
                                                          dfKTBAcc = self.dfKTBAcc,
-                                                         dfAccConsult = self.dfAccConsult,
                                                          maxPayment = self.maxPayment,
                                                          maxTerm = self.maxTerm)
             
-        if True: #Reduce installment based on remaining terms
-            offer_lst = offer_lst + generate_nonTDR_extension_offer(currentStatus = self.currentPaymentSummary,
-                                                                    dfAccConsult = self.dfAccConsult)
+        if self.userInfo.get("CustomerSegment", "") in ["Current", "C1", "C1-X"]: #Reduce installment based on remaining terms
+            offer_lst = offer_lst + generate_nonTDR_extension_offer(currentStatus = self.currentPaymentSummary)
 
-        if self.userInfo.get("CustomerSegment", "")=="C1": #stop principal payment for 3 month
-            offer_lst = offer_lst + generate_GDR_offer(currentStatus = self.currentPaymentSummary,
-                                                       dfAccConsult = self.dfAccConsult)
+        if self.userInfo.get("CustomerSegment", "") in ["Current", "C1", "C1-X"]: #stop principal payment for 3 month
+            offer_lst = offer_lst + generate_GDR_offer(currentStatus = self.currentPaymentSummary)
             
         if True:
             offer_lst = offer_lst +  generate_TDR_offer(currentStatus = self.currentPaymentSummary,
                                                         preference = self.preference,
-                                                        dfAccConsult = self.dfAccConsult,
                                                         dfKTBAcc = self.dfKTBAcc,
                                                         maxPayment = self.maxPayment,
-                                                        userInfo = self.userInfo)
+                                                        userInfo = self.userInfo,
+                                                        maxTerm = self.maxTerm)
         
             
         new_offer_lst = [offer.model_dump() for offer in offer_lst if self.check_repeat(offer)]
@@ -91,12 +88,15 @@ class DebtSolutionObject:
     
     def shortlist_offer(self, new_offer_lst)->list:
         PlanList = [offer["plan"] for offer in new_offer_lst]
+        print(PlanList)
         if self.preference["refPlanID"] != "":
             ref_plan = [p for p in self.prefRanking if self.preference["refPlanID"].startswith(p)][0]
-            if ref_plan in ["PLMOU01", "PLMOU03", "PLMOU02"]:
-                shortlistplan = [plan for plan in ["PLMOU03", "PLMOU02"] if plan in PlanList][:2]
-            elif ref_plan in ["TDR01", "TDR02", "TDR03"]:
-                shortlistplan = [plan for plan in ["TDR02", "TDR03"] if plan in PlanList][:2]
+            if ref_plan in ["CSL01", "CSL03", "CSL02"]:
+                shortlistplan = [plan for plan in ["CSL03", "CSL02"] if plan in PlanList][:2]
+            elif ref_plan in ["TDR01", "TDR02", "TDR10"]:
+                shortlistplan = [plan for plan in ["TDR02", "TDR10"] if plan in PlanList][:2]
+            elif ref_plan in ["TDR03"]:
+                shortlistplan = [plan for plan in ["TDR03"] if plan in PlanList][:2]
             elif ref_plan in ["TDR04", "TDR05", "TDR06", "TDR07", "TDR08", "TDR09"]:
                 shortlistplan = [plan for plan in ["TDR04", "TDR05"] if plan in PlanList][:2]
             else:
