@@ -1,6 +1,7 @@
 from app.services.model import AdvisorOutput, AgentInput, DebtSolnSummary, AdditionalPref
 from app.services.ai_agent.main_agent import DebtSolution_agent
 from app.services.HTML.offer_card_render import render_offer_card
+import numpy as np
 import datetime as dt
 import pandas as pd
 import json
@@ -24,12 +25,13 @@ class AdvisorReply:
                             'narrative': data.get("conversationDesc", {}).get("narrative", ""),
                             "preference": AdditionalPref(**preference),
                             "maxTerm": data.get("conversationDesc", {}).get("maxTerm", ""),
-                            'maxPayment': data.get("conversationDesc", {}).get("maxPayment", ""),
+                            'maxPayment': np.minimum(data.get("conversationDesc", {}).get("maxPayment"), 0.9*dfAccConsult["installment"].sum()),
                             "userInfo": data.get("userInfo", {}),
                             "eligiblePath": eligiblePath,
                             "df_offerSoln": df_offerSoln.to_dict(orient="records"),
                             "dfAccConsult": dfAccConsult.to_dict(orient="records"),
                             "dfKTBAcc": df_acc.to_dict(orient="records")}
+        print(self.agent_input["maxPayment"])
 
     def _gen_reply(self):
         self.agent_result = DebtSolution_agent(AgentInput(**self.agent_input))
