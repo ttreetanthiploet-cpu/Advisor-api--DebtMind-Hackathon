@@ -80,8 +80,8 @@ class DebtSolutionObject:
                                             & (self.df_offerSoln['refAccNo']==offer.refAccNo)
                                             & (self.df_offerSoln['term']==offer.term)
                                             & ((self.df_offerSoln['installment']-offer.installment).abs()<100)
-                                            & ((self.df_offerSoln['installment_Y2'].fillna(-100) - (offer.installment_Y2 if pd.notna(offer.installment_Y2) else -100)).abs() < 100)
-                                            & ((self.df_offerSoln['installment_Y3'].fillna(-100) - (offer.installment_Y3 if pd.notna(offer.installment_Y3) else -100)).abs() < 100)]
+                                            & ((self.df_offerSoln['installment_Y2'].fillna(0) - (offer.installment_Y2 if pd.notna(offer.installment_Y2) else 0)).abs() < 100)
+                                            & ((self.df_offerSoln['installment_Y3'].fillna(0) - (offer.installment_Y3 if pd.notna(offer.installment_Y3) else 0)).abs() < 100)]
             return (len(df_match)==0)
         else:
             return True
