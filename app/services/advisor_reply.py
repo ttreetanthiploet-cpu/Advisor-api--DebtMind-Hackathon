@@ -24,14 +24,14 @@ class AdvisorReply:
         self.agent_input = {"userMessage": data.get("userMessage", ""),
                             'narrative': data.get("conversationDesc", {}).get("narrative", ""),
                             "preference": AdditionalPref(**preference),
-                            "maxTerm": data.get("conversationDesc", {}).get("maxTerm", ""),
-                            'maxPayment': np.minimum(data.get("conversationDesc", {}).get("maxPayment"), 0.9*dfAccConsult["installment"].sum()),
+                            "maxTerm": np.maximum(data.get("conversationDesc", {}).get("maxTerm", ""), 3),
+                            'maxPayment': np.minimum(np.maximum(data.get("conversationDesc", {}).get("maxPayment"), 100), 0.9*dfAccConsult["installment"].sum()),
                             "userInfo": data.get("userInfo", {}),
                             "eligiblePath": eligiblePath,
                             "df_offerSoln": df_offerSoln.to_dict(orient="records"),
                             "dfAccConsult": dfAccConsult.to_dict(orient="records"),
                             "dfKTBAcc": df_acc.to_dict(orient="records")}
-        print(self.agent_input["maxPayment"])
+        
 
     def _gen_reply(self):
         self.agent_result = DebtSolution_agent(AgentInput(**self.agent_input))
