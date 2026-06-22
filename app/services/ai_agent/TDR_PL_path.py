@@ -294,8 +294,8 @@ def generate_TDR_offer(currentStatus: dict,
                                         preference = preference,
                                         userInfo = userInfo)
     maxPayYear = cashFlow.copy()
-    maxPayYear["installment_Y2"] = min(maxPayYear["installment_Y2"], preference["maxPaymentY2"])
-    maxPayYear["installment_Y3"] = min(maxPayYear["installment_Y3"], preference["maxPaymentY3"])
+    maxPayYear["installment_Y2"] = min(maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
+    maxPayYear["installment_Y3"] = min(maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
 
     output=[]
     if dfAcc["fg_eligible"].sum()==0: 
@@ -343,8 +343,8 @@ def generate_TDR_offer(currentStatus: dict,
                             dfAccCurrent = currentStatus["current_debt"])
 
         maxPayYear2 = cashFlow.copy()
-        maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], preference["maxPaymentY2"])
-        maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], preference["maxPaymentY3"])
+        maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
+        maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
 
         if (maxPayYear2 - maxPayYear).abs().sum() > 100:
             output+=NewStepOffer(planStep = "TDR06",
