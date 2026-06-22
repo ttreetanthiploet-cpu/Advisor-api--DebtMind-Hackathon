@@ -87,17 +87,6 @@ class DebtSolutionObject:
                                             & ((self.df_offerSoln['installment']-offer.installment).abs()<100)
                                             & ((self.df_offerSoln['installment_Y2'].fillna(0) - (offer.installment_Y2 if pd.notna(offer.installment_Y2) else 0)).abs() < 100)
                                             & ((self.df_offerSoln['installment_Y3'].fillna(0) - (offer.installment_Y3 if pd.notna(offer.installment_Y3) else 0)).abs() < 100)]
-            
-            print("refAccNo  :", offer.refAccNo,   "->", (self.df_offerSoln['refAccNo'] == offer.refAccNo).sum())
-            print("term      :", offer.term,        "->", (self.df_offerSoln['term'] == offer.term).sum())
-            print("totalInt  :", offer.totalIntPaid,"->", (self.df_offerSoln['totalIntPaid'] == offer.totalIntPaid).sum())
-            print("inst      :", offer.installment, "->", ((self.df_offerSoln['installment'] - offer.installment).abs() < 100).sum())
-
-            inst_y2 = offer.installment_Y2 if pd.notna(offer.installment_Y2) else 0
-            print("inst_Y2   :", inst_y2,           "->", ((self.df_offerSoln['installment_Y2'].fillna(0) - inst_y2).abs() < 100).sum())
-
-            inst_y3 = offer.installment_Y3 if pd.notna(offer.installment_Y3) else 0
-            print("inst_Y3   :", inst_y3,           "->", ((self.df_offerSoln['installment_Y3'].fillna(0) - inst_y3).abs() < 100).sum())
             return (len(df_match)==0)
         else:
             return True
