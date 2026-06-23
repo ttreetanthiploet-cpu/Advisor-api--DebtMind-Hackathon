@@ -334,36 +334,36 @@ def generate_TDR_offer(currentStatus: dict,
                                     dfOffer =df03,
                                     fgFlat = True,
                                     fgBalloon = True))
-    if df02[df02['fg_eligible']]["remainTerm"].max() > 18:
-        output+=NewStepOffer(planStep = "TDR04",
-                            planStepBalloon = "TDR05",
-                            solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
-                            maxPayYear = maxPayYear, 
-                            dfAcc = dfAcc,
-                            dfAccCurrent = currentStatus["current_debt"])
-
-        maxPayYear2 = cashFlow.copy()
-        maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
-        maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
-
-        if (maxPayYear2 - maxPayYear).abs().sum() > 100:
-            output+=NewStepOffer(planStep = "TDR06",
-                                planStepBalloon = "TDR07",
+        if df02[df02['fg_eligible']]["remainTerm"].max() > 18:
+            output+=NewStepOffer(planStep = "TDR04",
+                                planStepBalloon = "TDR05",
                                 solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
                                 maxPayYear = maxPayYear, 
                                 dfAcc = dfAcc,
                                 dfAccCurrent = currentStatus["current_debt"])
 
-        if (maxPayYear2["installment_Y2"]>dfAcc["installment"].sum()) or (maxPayYear2["installment_Y3"]>dfAcc["installment"].sum()):
-            mpC=maxPayYear2.copy()
-            mpC["installment_Y2"]=min(mpC["installment_Y2"],dfAcc["installment"].sum(), preference["maxPaymentY2"])
-            mpC["installment_Y3"]=min(mpC["installment_Y3"],dfAcc["installment"].sum(), preference["maxPaymentY3"])
-            output+=NewStepOffer(planStep = "TDR08",
-                                planStepBalloon = "TDR09",
-                                solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าไม่เกินอัตราชำระเดิม",
-                                maxPayYear = maxPayYear, 
-                                dfAcc = dfAcc,
-                                dfAccCurrent = currentStatus["current_debt"])
+            maxPayYear2 = cashFlow.copy()
+            maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
+            maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
+
+            if (maxPayYear2 - maxPayYear).abs().sum() > 100:
+                output+=NewStepOffer(planStep = "TDR06",
+                                    planStepBalloon = "TDR07",
+                                    solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
+                                    maxPayYear = maxPayYear, 
+                                    dfAcc = dfAcc,
+                                    dfAccCurrent = currentStatus["current_debt"])
+
+            if (maxPayYear2["installment_Y2"]>dfAcc["installment"].sum()) or (maxPayYear2["installment_Y3"]>dfAcc["installment"].sum()):
+                mpC=maxPayYear2.copy()
+                mpC["installment_Y2"]=min(mpC["installment_Y2"],dfAcc["installment"].sum(), preference["maxPaymentY2"])
+                mpC["installment_Y3"]=min(mpC["installment_Y3"],dfAcc["installment"].sum(), preference["maxPaymentY3"])
+                output+=NewStepOffer(planStep = "TDR08",
+                                    planStepBalloon = "TDR09",
+                                    solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าไม่เกินอัตราชำระเดิม",
+                                    maxPayYear = maxPayYear, 
+                                    dfAcc = dfAcc,
+                                    dfAccCurrent = currentStatus["current_debt"])
 
     if maxTerm < TDR_maxPaymentTerm:
         df10=TDROfferGivenTerm(dfAcc = dfAcc,
