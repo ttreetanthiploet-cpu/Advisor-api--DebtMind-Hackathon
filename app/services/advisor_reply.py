@@ -17,8 +17,9 @@ class AdvisorReply:
         eligiblePath = [x.strip() for x in self.input_data['userInfo']["EligibleProgram"].split(",")]
 
         required_offer_cols = [col for col in DebtSolnSummary.model_fields.keys() if col not in ["solnAcc"]]
-        df_offerSoln = pd.DataFrame(data['conversationDesc']['offerSoln']).reindex(columns=required_offer_cols)
-
+        df_offerSoln = (pd.DataFrame(data['conversationDesc']['offerSoln'])
+                        .rename(columns={'totalExpInt': 'totalIntPaid'})
+                        .reindex(columns=required_offer_cols))
         preference = json.loads(data.get("conversationDesc", {}).get("preference", ""))
 
         self.agent_input = {"userMessage": data.get("userMessage", ""),

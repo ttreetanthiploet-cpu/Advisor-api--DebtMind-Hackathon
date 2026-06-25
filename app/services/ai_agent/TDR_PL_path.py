@@ -58,9 +58,9 @@ def TDROfferGivenTerm(dfAcc: pd.DataFrame,
 def TDR02Offer(maxPayYear : pd.Series,
                dfAcc : pd.DataFrame):
     df = dfAcc.copy()
-    df["weight"] = df["os"]*df["fg_eligible"]
+    df["weight"] = df["installment"]*df["fg_eligible"]
     maxPay_TDR = maxPayYear["installment"] - df[~df["fg_eligible"]]["installment"].sum()
-    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR-df["min_installment"].sum())*(df["weight"]/df["weight"].sum())
+    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR-df[df["fg_eligible"]]["min_installment"].sum())*(df["weight"]/df["weight"].sum())
     return TDRFlatCal(df)
 
 def TDRstepUpOffer(maxPayYear: pd.Series,
@@ -68,7 +68,7 @@ def TDRstepUpOffer(maxPayYear: pd.Series,
     df=dfAcc.copy()
     df["weight"] = np.minimum(df["os"], dfAcc["installment"])*df["fg_eligible"]
     maxPay_TDR_Y1 = maxPayYear["installment"] - df[~df["fg_eligible"]]["installment"].sum()
-    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR_Y1-df["min_installment"].sum())*(df["weight"]/(df["weight"].sum()+ 1e-10))
+    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR_Y1-df[df["fg_eligible"]]["min_installment"].sum())*(df["weight"]/(df["weight"].sum()+ 1e-10))
     df["term_Y1"]=np.minimum(12, df.apply(lambda r:findTerm(r["os"], r["intRate"], r["installment_tdr"]), axis=1))
     df["remainOS_Y1"]=np.maximum(0, df.apply(lambda r:findRemainOS(r["os"],r["intRate"]/12,r["installment_tdr"],r["term_Y1"]),axis=1))*df["fg_eligible"]
     df["weight_Y2"] = np.minimum(df["remainOS_Y1"], dfAcc["installment"])*df["fg_eligible"]
@@ -76,7 +76,7 @@ def TDRstepUpOffer(maxPayYear: pd.Series,
     
     df["min_inst_Y2"]=df["remainOS_Y1"]*(df["intRate"]/12)*(1/(1-TDRmin_payment_prop))
     maxPay_TDR_Y2 = maxPayYear["installment_Y2"] - df[~df["fg_eligible"]]["installment_Y2"].sum()
-    df["installment_Y2_tdr"]=df["min_inst_Y2"]+(maxPay_TDR_Y2-df["min_inst_Y2"].sum())*(df["weight_Y2"]/(df["weight_Y2"].sum()+ 1e-10))
+    df["installment_Y2_tdr"]=df["min_inst_Y2"]+(maxPay_TDR_Y2-df[df["fg_eligible"]]["min_inst_Y2"].sum())*(df["weight_Y2"]/(df["weight_Y2"].sum()+ 1e-10))
     df["term_Y2"]=np.minimum(12,df.apply(lambda r:findTerm(r["remainOS_Y1"],r["intRate"],r["installment_Y2_tdr"]),axis=1))
     df["remainOS_Y2"]=np.maximum(0,df.apply(lambda r:findRemainOS(r["remainOS_Y1"],r["intRate"]/12,r["installment_Y2_tdr"],np.minimum(r["term_Y2"],12)),axis=1))*df["fg_eligible"]
     df["weight_Y3"] = np.minimum(df["remainOS_Y2"], dfAcc["installment"])*df["fg_eligible"]
@@ -84,7 +84,7 @@ def TDRstepUpOffer(maxPayYear: pd.Series,
 
     df["min_inst_Y3"]=df["remainOS_Y2"]*(df["intRate"]/12)*(1/(1-TDRmin_payment_prop))
     maxPay_TDR_Y3 = maxPayYear["installment_Y3"] - df[~df["fg_eligible"]]["installment_Y3"].sum()
-    df["installment_Y3_tdr"]=df["min_inst_Y3"]+(maxPay_TDR_Y3-df["min_inst_Y3"].sum())*df["weight_Y3"]/(df["weight_Y3"].sum() + 1e-10)
+    df["installment_Y3_tdr"]=df["min_inst_Y3"]+(maxPay_TDR_Y3-df[df["fg_eligible"]]["min_inst_Y3"].sum())*df["weight_Y3"]/(df["weight_Y3"].sum() + 1e-10)
     df["term_Y3"]=df.apply(lambda r:findTerm(r["remainOS_Y2"],r["intRate"],r["installment_Y3_tdr"]),axis=1)
     df["expIntTotal_Y3"]=df.apply(lambda r:findInterestPaid(r["remainOS_Y2"],r["intRate"]/12,r["installment_Y3_tdr"],r["term_Y3"]),axis=1)
 
