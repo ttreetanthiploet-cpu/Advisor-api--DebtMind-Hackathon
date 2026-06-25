@@ -137,7 +137,7 @@ def _parts(dfOffer,fgFlat,fgBalloon):
     return p
 
 def _y2y3_str(y2,y3):
-    return f"{_f0(y2)} และ {_f0(y3)} บาท/งวด" if abs(y2-y3)>1 else f"{_f0(y3)} บาท/งวด"
+    return f"{_f0(y2)} บาท/งวด" if y3 == 0 or abs(y2 - y3) <= 1 else f"{_f0(y2)} และ {_f0(y3)} บาท/งวด"
 
 # ── offer-card builders ───────────────────────────────────────────────────
 
@@ -170,7 +170,7 @@ def create_tdr_offer_card(planId: str,
         step_label       = "" if fgFlat else "ปีแรก",
         source_desc      = solutionDesc,
         inst_y2y3        = _y2y3_str(float(dfOffer["installment_Y2"].sum()),float(dfOffer["installment_Y3"].sum())) if not fgFlat else "",
-        term_change      = f"{int(dfAccCurrent['remainTerm'].max())} → {int(dfOffer['remainTerm'].max())} งวด" if ncb else "",
+        term_change      = f"{int(dfAccCurrent['remainTerm'].max())} → {int(dfOffer['remainTerm'].max())} งวด" if (ncb and len(dfOffer['remainTerm'])==1) else "",
         int_total_change = f"{_f2(dfAccCurrent['expIntTotal'].sum())} → {_f2(dfOffer['expIntTotal'].sum())} บาท",
         balloon_rows     = balloon_rows,
         notes            = notes,
