@@ -32,8 +32,8 @@ PreferenceRANKING = {
         "CSL02", "CSL03", "CSL01",
     ],
     ("DebtBurden", "C3"): [
-        "TDR02", "TDR10", "TDR04", "TDR08",
-        "TDR03", "TDR05", "TDR09", "TDR07", "TDR06", "TDR01",
+        "TDR02", "TDR01", "TDR10", "TDR04", "TDR08",
+        "TDR03", "TDR05", "TDR09", "TDR07", "TDR06", 
         "GDR", "EXT",
         "CSL02", "CSL03", "CSL01",
     ],
