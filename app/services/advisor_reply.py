@@ -1,6 +1,7 @@
 from app.services.model import AdvisorOutput, AgentInput, DebtSolnSummary, AdditionalPref
 from app.services.ai_agent.main_agent import DebtSolution_agent
 from app.services.HTML.offer_card_render import render_offer_card
+import numpy as np
 import datetime as dt
 import pandas as pd
 import json
@@ -16,20 +17,22 @@ class AdvisorReply:
         eligiblePath = [x.strip() for x in self.input_data['userInfo']["EligibleProgram"].split(",")]
 
         required_offer_cols = [col for col in DebtSolnSummary.model_fields.keys() if col not in ["solnAcc"]]
-        df_offerSoln = pd.DataFrame(data['conversationDesc']['offerSoln']).reindex(columns=required_offer_cols)
-
+        df_offerSoln = (pd.DataFrame(data['conversationDesc']['offerSoln'])
+                        .rename(columns={'totalExpInt': 'totalIntPaid'})
+                        .reindex(columns=required_offer_cols))
         preference = json.loads(data.get("conversationDesc", {}).get("preference", ""))
 
         self.agent_input = {"userMessage": data.get("userMessage", ""),
                             'narrative': data.get("conversationDesc", {}).get("narrative", ""),
                             "preference": AdditionalPref(**preference),
-                            "maxTerm": data.get("conversationDesc", {}).get("maxTerm", ""),
-                            'maxPayment': data.get("conversationDesc", {}).get("maxPayment", ""),
+                            "maxTerm": np.maximum(data.get("conversationDesc", {}).get("maxTerm", ""), 3),
+                            'maxPayment': np.minimum(np.maximum(data.get("conversationDesc", {}).get("maxPayment"), 100), 0.9*dfAccConsult["installment"].sum()),
                             "userInfo": data.get("userInfo", {}),
                             "eligiblePath": eligiblePath,
                             "df_offerSoln": df_offerSoln.to_dict(orient="records"),
                             "dfAccConsult": dfAccConsult.to_dict(orient="records"),
                             "dfKTBAcc": df_acc.to_dict(orient="records")}
+        
 
     def _gen_reply(self):
         self.agent_result = DebtSolution_agent(AgentInput(**self.agent_input))

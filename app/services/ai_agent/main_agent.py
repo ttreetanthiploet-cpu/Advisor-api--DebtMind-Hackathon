@@ -71,17 +71,20 @@ class DebtSolutionObject:
                                                         maxTerm = self.maxTerm)
         
             
-        new_offer_lst = [offer.model_dump() for offer in offer_lst if self.check_repeat(offer)]
+        seen_offer = []
+        new_offer_lst = []
+        for offer in offer_lst:
+            if self.check_repeat(offer) and not any(offer.term == t and abs(offer.totalIntPaid - p) <= 1 for t, p in seen_offer):
+                seen_offer.append((offer.term, offer.totalIntPaid))
+                new_offer_lst.append(offer.model_dump())
         self.shortlisted_offer = self.shortlist_offer(new_offer_lst = new_offer_lst)
             
     def check_repeat(self, offer):
         if len(self.df_offerSoln) > 0:
-            df_match = self.df_offerSoln.loc[(self.df_offerSoln['plan']==offer.plan)
-                                            & (self.df_offerSoln['refAccNo']==offer.refAccNo)
+            df_match = self.df_offerSoln.loc[ (self.df_offerSoln['refAccNo']==offer.refAccNo)
                                             & (self.df_offerSoln['term']==offer.term)
-                                            & ((self.df_offerSoln['installment']-offer.installment).abs()<100)
-                                            & ((self.df_offerSoln['installment_Y2'].fillna(-100) - (offer.installment_Y2 if pd.notna(offer.installment_Y2) else -100)).abs() < 100)
-                                            & ((self.df_offerSoln['installment_Y3'].fillna(-100) - (offer.installment_Y3 if pd.notna(offer.installment_Y3) else -100)).abs() < 100)]
+                                            & ((self.df_offerSoln['totalIntPaid']-offer.totalIntPaid).abs()<100)
+                                            & ((self.df_offerSoln['installment']-offer.installment).abs()<100)]
             return (len(df_match)==0)
         else:
             return True

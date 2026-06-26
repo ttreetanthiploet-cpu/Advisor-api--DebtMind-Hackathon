@@ -58,31 +58,33 @@ def TDROfferGivenTerm(dfAcc: pd.DataFrame,
 def TDR02Offer(maxPayYear : pd.Series,
                dfAcc : pd.DataFrame):
     df = dfAcc.copy()
-    df["os_tdr"] = df["os"]*df["fg_eligible"]
+    df["weight"] = df["installment"]*df["fg_eligible"]
     maxPay_TDR = maxPayYear["installment"] - df[~df["fg_eligible"]]["installment"].sum()
-    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR-df["min_installment"].sum())*(df["os_tdr"]/df["os_tdr"].sum())
+    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR-df[df["fg_eligible"]]["min_installment"].sum())*(df["weight"]/df["weight"].sum())
     return TDRFlatCal(df)
 
 def TDRstepUpOffer(maxPayYear: pd.Series,
                    dfAcc: pd.DataFrame):
     df=dfAcc.copy()
-    df["os_tdr"] = df["os"]*df["fg_eligible"]
+    df["weight"] = np.minimum(df["os"], dfAcc["installment"])*df["fg_eligible"]
     maxPay_TDR_Y1 = maxPayYear["installment"] - df[~df["fg_eligible"]]["installment"].sum()
-    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR_Y1-df["min_installment"].sum())*(df["os_tdr"]/(df["os_tdr"].sum()+ 1e-10))
+    df["installment_tdr"]=df["min_installment"]+(maxPay_TDR_Y1-df[df["fg_eligible"]]["min_installment"].sum())*(df["weight"]/(df["weight"].sum()+ 1e-10))
     df["term_Y1"]=np.minimum(12, df.apply(lambda r:findTerm(r["os"], r["intRate"], r["installment_tdr"]), axis=1))
     df["remainOS_Y1"]=np.maximum(0, df.apply(lambda r:findRemainOS(r["os"],r["intRate"]/12,r["installment_tdr"],r["term_Y1"]),axis=1))*df["fg_eligible"]
+    df["weight_Y2"] = np.minimum(df["remainOS_Y1"], dfAcc["installment"])*df["fg_eligible"]
     df["expIntTotal_Y1"]=df.apply(lambda r:findInterestPaid(r["os"],r["intRate"]/12,r["installment_tdr"],r["term_Y1"]),axis=1)
     
     df["min_inst_Y2"]=df["remainOS_Y1"]*(df["intRate"]/12)*(1/(1-TDRmin_payment_prop))
     maxPay_TDR_Y2 = maxPayYear["installment_Y2"] - df[~df["fg_eligible"]]["installment_Y2"].sum()
-    df["installment_Y2_tdr"]=df["min_inst_Y2"]+(maxPay_TDR_Y2-df["min_inst_Y2"].sum())*(df["remainOS_Y1"]/(df["remainOS_Y1"].sum()+ 1e-10))
+    df["installment_Y2_tdr"]=df["min_inst_Y2"]+(maxPay_TDR_Y2-df[df["fg_eligible"]]["min_inst_Y2"].sum())*(df["weight_Y2"]/(df["weight_Y2"].sum()+ 1e-10))
     df["term_Y2"]=np.minimum(12,df.apply(lambda r:findTerm(r["remainOS_Y1"],r["intRate"],r["installment_Y2_tdr"]),axis=1))
     df["remainOS_Y2"]=np.maximum(0,df.apply(lambda r:findRemainOS(r["remainOS_Y1"],r["intRate"]/12,r["installment_Y2_tdr"],np.minimum(r["term_Y2"],12)),axis=1))*df["fg_eligible"]
+    df["weight_Y3"] = np.minimum(df["remainOS_Y2"], dfAcc["installment"])*df["fg_eligible"]
     df["expIntTotal_Y2"]=df.apply(lambda r:findInterestPaid(r["remainOS_Y1"],r["intRate"]/12,r["installment_Y2_tdr"],np.minimum(r["term_Y2"],12)),axis=1)
 
     df["min_inst_Y3"]=df["remainOS_Y2"]*(df["intRate"]/12)*(1/(1-TDRmin_payment_prop))
     maxPay_TDR_Y3 = maxPayYear["installment_Y3"] - df[~df["fg_eligible"]]["installment_Y3"].sum()
-    df["installment_Y3_tdr"]=df["min_inst_Y3"]+(maxPay_TDR_Y3-df["min_inst_Y3"].sum())*df["remainOS_Y2"]/(df["remainOS_Y2"].sum() + 1e-10)
+    df["installment_Y3_tdr"]=df["min_inst_Y3"]+(maxPay_TDR_Y3-df[df["fg_eligible"]]["min_inst_Y3"].sum())*df["weight_Y3"]/(df["weight_Y3"].sum() + 1e-10)
     df["term_Y3"]=df.apply(lambda r:findTerm(r["remainOS_Y2"],r["intRate"],r["installment_Y3_tdr"]),axis=1)
     df["expIntTotal_Y3"]=df.apply(lambda r:findInterestPaid(r["remainOS_Y2"],r["intRate"]/12,r["installment_Y3_tdr"],r["term_Y3"]),axis=1)
 
@@ -135,7 +137,7 @@ def _parts(dfOffer,fgFlat,fgBalloon):
     return p
 
 def _y2y3_str(y2,y3):
-    return f"{_f0(y2)} และ {_f0(y3)} บาท/งวด" if abs(y2-y3)>1 else f"{_f0(y3)} บาท/งวด"
+    return f"{_f0(y2)} บาท/งวด" if y3 == 0 or abs(y2 - y3) <= 1 else f"{_f0(y2)} และ {_f0(y3)} บาท/งวด"
 
 # ── offer-card builders ───────────────────────────────────────────────────
 
@@ -168,7 +170,7 @@ def create_tdr_offer_card(planId: str,
         step_label       = "" if fgFlat else "ปีแรก",
         source_desc      = solutionDesc,
         inst_y2y3        = _y2y3_str(float(dfOffer["installment_Y2"].sum()),float(dfOffer["installment_Y3"].sum())) if not fgFlat else "",
-        term_change      = f"{int(dfAccCurrent['remainTerm'].max())} → {int(dfOffer['remainTerm'].max())} งวด" if ncb else "",
+        term_change      = f"{int(dfAccCurrent['remainTerm'].max())} → {int(dfOffer['remainTerm'].max())} งวด" if (ncb and len(dfOffer['remainTerm'])==1) else "",
         int_total_change = f"{_f2(dfAccCurrent['expIntTotal'].sum())} → {_f2(dfOffer['expIntTotal'].sum())} บาท",
         balloon_rows     = balloon_rows,
         notes            = notes,
@@ -292,8 +294,8 @@ def generate_TDR_offer(currentStatus: dict,
                                         preference = preference,
                                         userInfo = userInfo)
     maxPayYear = cashFlow.copy()
-    maxPayYear["installment_Y2"] = min(maxPayYear["installment_Y2"], preference["maxPaymentY2"])
-    maxPayYear["installment_Y3"] = min(maxPayYear["installment_Y3"], preference["maxPaymentY3"])
+    maxPayYear["installment_Y2"] = min(maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
+    maxPayYear["installment_Y3"] = min(maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
 
     output=[]
     if dfAcc["fg_eligible"].sum()==0: 
@@ -324,44 +326,44 @@ def generate_TDR_offer(currentStatus: dict,
                                 fgBalloon = False))
         
         df03=BalloonPlanFlat(df02)
-        output.append(TDR_summary(plan = "TDR03",
-                                planId = "TDR03"+dt.datetime.now().strftime("%Y%m%d%H%M%S"),
-                                solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้า",
-                                dfAccCurrent = currentStatus["current_debt"], 
-                                dfOffer =df03,
-                                fgFlat = True,
-                                fgBalloon = True))
+        if df03["extraPaymentlastMth"].sum() > 1000:
+            output.append(TDR_summary(plan = "TDR03",
+                                    planId = "TDR03"+dt.datetime.now().strftime("%Y%m%d%H%M%S"),
+                                    solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้า",
+                                    dfAccCurrent = currentStatus["current_debt"], 
+                                    dfOffer =df03,
+                                    fgFlat = True,
+                                    fgBalloon = True))
+        if df02[df02['fg_eligible']]["remainTerm"].max() > 18:
+            output+=NewStepOffer(planStep = "TDR04",
+                                planStepBalloon = "TDR05",
+                                solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
+                                maxPayYear = maxPayYear, 
+                                dfAcc = dfAcc,
+                                dfAccCurrent = currentStatus["current_debt"])
 
-    output+=NewStepOffer(planStep = "TDR04",
-                         planStepBalloon = "TDR05",
-                         solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
-                         maxPayYear = maxPayYear, 
-                         dfAcc = dfAcc,
-                         dfAccCurrent = currentStatus["current_debt"])
+            maxPayYear2 = cashFlow.copy()
+            maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY2"])
+            maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], 1.2*dfAcc["installment"].sum(), preference["maxPaymentY3"])
 
+            if (maxPayYear2 - maxPayYear).abs().sum() > 100:
+                output+=NewStepOffer(planStep = "TDR06",
+                                    planStepBalloon = "TDR07",
+                                    solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
+                                    maxPayYear = maxPayYear, 
+                                    dfAcc = dfAcc,
+                                    dfAccCurrent = currentStatus["current_debt"])
 
-    maxPayYear2 = cashFlow.copy()
-    maxPayYear2["installment_Y2"] = min(0.9*maxPayYear["installment_Y2"], preference["maxPaymentY2"])
-    maxPayYear2["installment_Y3"] = min(0.9*maxPayYear["installment_Y3"], preference["maxPaymentY3"])
-
-    if (maxPayYear2 - maxPayYear).abs().sum() > 100:
-        output+=NewStepOffer(planStep = "TDR06",
-                            planStepBalloon = "TDR07",
-                            solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าและกระแสเงินสด",
-                            maxPayYear = maxPayYear, 
-                            dfAcc = dfAcc,
-                            dfAccCurrent = currentStatus["current_debt"])
-
-    if (maxPayYear2["installment_Y2"]>dfAcc["installment"].sum()) or (maxPayYear2["installment_Y3"]>dfAcc["installment"].sum()):
-        mpC=maxPayYear2.copy()
-        mpC["installment_Y2"]=min(mpC["installment_Y2"],dfAcc["installment"].sum(), preference["maxPaymentY2"])
-        mpC["installment_Y3"]=min(mpC["installment_Y3"],dfAcc["installment"].sum(), preference["maxPaymentY3"])
-        output+=NewStepOffer(planStep = "TDR08",
-                            planStepBalloon = "TDR09",
-                            solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าไม่เกินอัตราชำระเดิม",
-                            maxPayYear = maxPayYear, 
-                            dfAcc = dfAcc,
-                            dfAccCurrent = currentStatus["current_debt"])
+            if (maxPayYear2["installment_Y2"]>dfAcc["installment"].sum()) or (maxPayYear2["installment_Y3"]>dfAcc["installment"].sum()):
+                mpC=maxPayYear2.copy()
+                mpC["installment_Y2"]=min(mpC["installment_Y2"],dfAcc["installment"].sum(), preference["maxPaymentY2"])
+                mpC["installment_Y3"]=min(mpC["installment_Y3"],dfAcc["installment"].sum(), preference["maxPaymentY3"])
+                output+=NewStepOffer(planStep = "TDR08",
+                                    planStepBalloon = "TDR09",
+                                    solutionDesc = "ด้วยอัตรากำลังผ่อนชำระของลูกค้าไม่เกินอัตราชำระเดิม",
+                                    maxPayYear = maxPayYear, 
+                                    dfAcc = dfAcc,
+                                    dfAccCurrent = currentStatus["current_debt"])
 
     if maxTerm < TDR_maxPaymentTerm:
         df10=TDROfferGivenTerm(dfAcc = dfAcc,
